@@ -1,6 +1,6 @@
 # galaxycat
 
-galaxycat is a python package that let you setup easily an online Galaxy instances and tools catalog.
+An online catalog for Galaxy instances and tools.
 
 ## Requirements
 
@@ -66,6 +66,6 @@ You can uupdate the catalog at anytime with the following command :
 # Coming up
 
   * EDAM data integration
-  * Better search engine
-  * Pagination and stats on search results
-  * Direct link to instance terms
+  * ~~Better search engine~~
+  * Pagination ~~and stats on search results~~
+  * ~~Direct link to instance terms~~
