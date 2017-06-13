@@ -62,3 +62,10 @@ You can uupdate the catalog at anytime with the following command :
     $ gunicorn galaxycat.app:app
 
 *See Gunicorn documentation for more options*
+
+# Coming up
+
+  * EDAM data integration
+  * Better search engine
+  * Pagination and stats on search results
+  * Direct link to instance terms
