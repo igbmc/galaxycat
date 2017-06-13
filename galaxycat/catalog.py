@@ -10,6 +10,7 @@ from galaxycat.config import config
 from mongoengine import connect
 from mongoengine import Document
 from mongoengine import BooleanField, DateTimeField, ListField, ReferenceField, StringField
+from mongoengine.queryset.visitor import Q
 
 
 connect(db=config['MONGODB_DB'], host=config['MONGODB_HOST'], port=config['MONGODB_PORT'])
@@ -162,53 +163,15 @@ class Tool(Document):
                         tool.versions.append(tool_version)
 
                     tool.save()
-            # for section in tool_client.get_tool_panel():
-            #     if section['model_class'] == 'ToolSection':
-            #         for element in section['elems']:
-            #             if element['model_class'] == 'Tool':
-            #
-            #                 tool_name = element['id']
-            #                 if '/' in tool_name:
-            #                     tool_name = tool_name.split('/')[-2]
-            #
-            #                 try:
-            #                     tool = Tool.objects.get(name=tool_name)
-            #                 except Tool.DoesNotExist:
-            #                     tool = Tool(name=tool_name)
-            #
-            #                 tool.description = element['description']
-            #                 tool.display_name = element['name']
-            #
-            #                 try:
-            #                     if 'tool_shed_repository' in element:
-            #                         tool_version = ToolVersion.objects.get(name=tool_name,
-            #                                                                changeset=element['tool_shed_repository']['changeset_revision'],
-            #                                                                tool_shed=element['tool_shed_repository']['tool_shed'],
-            #                                                                owner=element['tool_shed_repository']['owner'])
-            #                     else:
-            #                         tool_version = ToolVersion.objects.get(name=tool_name,
-            #                                                                version=element['version'],
-            #                                                                tool_shed=None,
-            #                                                                owner=None)
-            #                 except ToolVersion.DoesNotExist:
-            #                     tool_version = ToolVersion(name=tool_name,
-            #                                                version=element['version'])
-            #
-            #                 if 'tool_shed_repository' in element:
-            #                     tool_version.changeset = element['tool_shed_repository']['changeset_revision']
-            #                     tool_version.tool_shed = element['tool_shed_repository']['tool_shed']
-            #                     tool_version.owner = element['tool_shed_repository']['owner']
-            #
-            #                 if instance not in tool_version.instances:
-            #                     tool_version.instances.append(instance)
-            #
-            #                 tool_version.save()
-            #
-            #                 if tool_version not in tool.versions:
-            #                     tool.versions.append(tool_version)
-            #
-            #                 tool.save()
 
     @classmethod
     def search(cls, search):
-        return Tool.objects(name__icontains=search)
+        q = None
+        for term in search.split(' '):
+            q_part = (Q(name__icontains=term) | Q(description__icontains=term) | Q(display_name__icontains=term))
+            if q is None:
+                q = q_part
+            else:
+                q = q & q_part
+
+        return Tool.objects(q)
