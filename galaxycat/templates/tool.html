@@ -22,11 +22,19 @@
         {% if version.tool_shed %}
           <a href="http://{{ version.tool_shed }}/view/{{ version.owner  }}/{{ tool.name }}/{{ version.changeset }}">{{ version.version }}</a>
         {% else %}
-          {{ version.version }}<i class="fa fa-warning"></i>
+          {{ version.version }}
         {% endif %}
       </td>
+      {% if version.tool_shed %}
       <td>{{ version.tool_shed|default('', True) }}</td>
       <td>{{ version.owner|default('', True)  }}</td>
+      {% else %}
+      <td>
+        <i class="fa fa-warning"></i> Tool version not installed from a tool shed.<br/>
+        <em>It may not be suitable for reproducible research.</em>
+      </td>
+      <td>?</td>
+      {% endif %}
       <td>
         <ul class="list-unstyled">
           {% for instance in version.instances %}
