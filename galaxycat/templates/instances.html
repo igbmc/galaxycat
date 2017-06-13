@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<table class="table table-condensed table-striped table-responsive table-hover">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th>URL</th>
+      <th>Properties</th>
+      <th>Tools available</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for instance in instances %}
+    <tr>
+      <td>{{ instance.brand|default('', True) }}</td>
+      <td><a href="{{ instance.url }}">{{ instance.url }}</a></td>
+      <td>
+          <span class="label label-default">v{{ instance.version }}</span>
+          {% if instance.require_login %}
+          <i class="fa fa-lock"></i>
+          {% else %}
+          <i class="fa fa-unlock"></i>
+          {% endif %}
+          {% if instance.enable_quotas %}
+          <i class="fa fa-pie-chart" aria-hidden="true"></i>
+          {% endif %}
+      </td>
+      <td>{{ instance.get_tools_count() }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="3">No instances registered</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

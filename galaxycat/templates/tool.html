@@ -1,0 +1,44 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h1>{{ tool.display_name }} <small>{{ tool.description }}</small></h1>
+
+<p class="lead">{{ tool.name }}</p>
+
+<table class="table table-condensed table-responsive table-hover">
+  <thead>
+    <tr>
+      <th>Version</th>
+      <th>Tool Shed</th>
+      <th>Owner</th>
+      <th>Instances</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for version in tool.versions|sort(attribute='version', reverse=True) %}
+    <tr>
+      <td>
+        {% if version.tool_shed %}
+          <a href="http://{{ version.tool_shed }}/view/{{ version.owner  }}/{{ tool.name }}/{{ version.changeset }}">{{ version.version }}</a>
+        {% else %}
+          {{ version.version }}<i class="fa fa-warning"></i>
+        {% endif %}
+      </td>
+      <td>{{ version.tool_shed|default('', True) }}</td>
+      <td>{{ version.owner|default('', True)  }}</td>
+      <td>
+        <ul class="list-unstyled">
+          {% for instance in version.instances %}
+          <li>
+            <a href="{{instance.url}}" target="_blank">{{instance.url}}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

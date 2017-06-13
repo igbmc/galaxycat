@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="row">
+  <div class="col-lg-6 col-lg-offset-3">
+    <form class="form-horizontal" action="{{url_for('search')}}" method="get">
+      <div class="input-group">
+        <input type="text" class="form-control" name="search" value="{{request.args.get('search', '')}}" placeholder="Type in your search" autofocus>
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="submit"><i class="fa fa-search" aria-hidden="true"></i></button>
+        </span>
+      </div><!-- /input-group -->
+      <p class="help-block">Examples : samtools, bed, wig</p>
+    </form>
+  </div><!-- /.col-lg-6 -->
+</div><!-- /.row -->
+
+{% if request.args['search'] %}
+<table class="table table-condensed table-striped table-responsive table-hover">
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Description</th>
+      <th>Available versions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tool in tools|sort(attribute='display_name') %}
+    <tr>
+      <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.display_name }}</a></td>
+      <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.description }}</a></td>
+      <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.versions|length }}</a></td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="3">No tools found</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% endblock %}
