@@ -1,0 +1,4 @@
+recursive-include galaxycat/templates *
+recursive-include galaxycat/static *
+include README.md
+include requirements.txt
