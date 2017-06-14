@@ -44,7 +44,7 @@ Run the galaxycat CLI as follow :
 
     $ galaxycat add_galaxy_instance --url=instance_full_url
 
-You can uupdate the catalog at anytime with the following command :
+You can update the catalog at anytime with the following command :
 
     $ galaxycat update_catalog
 
@@ -52,10 +52,7 @@ You can uupdate the catalog at anytime with the following command :
 
 ### Using Flask server
 
-    $ export FLASK_APP=galaxycat.app:app
-    $ flask run
-
-*See Flask documentation for more options*
+    $ galaxycat serve
 
 ### Using GreenUnicorn
 

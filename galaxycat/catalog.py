@@ -82,7 +82,7 @@ class Instance(Document):
         instance.version = instance_config['version_major']
         instance.save()
 
-        Tool.retrieve_tools_from_instance(instance_url=instance_url)
+        Tool.retrieve_tools_from_instance(instance=instance)
 
     def get_tools_count(self):
         tool_versions = ToolVersion.objects(instances=self)
@@ -110,59 +110,53 @@ class Tool(Document):
     meta = {'collection': 'tools'}
 
     @classmethod
-    def retrieve_tools_from_instance(cls, instance_url=None):
+    def retrieve_tools_from_instance(cls, instance):
 
-        if instance_url is not None:
-            instances = Instance.objects(url=instance_url)
-        else:
-            instances = Instance.objects()
+        galaxy_instance = GalaxyInstance(url=instance.url)
+        tool_client = ToolClient(galaxy_instance)
+        for element in tool_client.get_tools():
+            if element['model_class'] == 'Tool':
+                tool_name = element['id']
+                if '/' in tool_name:
+                    tool_name = tool_name.split('/')[-2]
 
-        for instance in instances:
-            galaxy_instance = GalaxyInstance(url=instance.url)
-            tool_client = ToolClient(galaxy_instance)
-            for element in tool_client.get_tools():
-                if element['model_class'] == 'Tool':
-                    tool_name = element['id']
-                    if '/' in tool_name:
-                        tool_name = tool_name.split('/')[-2]
+                try:
+                    tool = Tool.objects.get(name=tool_name)
+                except Tool.DoesNotExist:
+                    tool = Tool(name=tool_name)
 
-                    try:
-                        tool = Tool.objects.get(name=tool_name)
-                    except Tool.DoesNotExist:
-                        tool = Tool(name=tool_name)
+                tool.description = element['description']
+                tool.display_name = element['name']
 
-                    tool.description = element['description']
-                    tool.display_name = element['name']
-
-                    try:
-                        if 'tool_shed_repository' in element:
-                            tool_version = ToolVersion.objects.get(name=tool_name,
-                                                                   changeset=element['tool_shed_repository']['changeset_revision'],
-                                                                   tool_shed=element['tool_shed_repository']['tool_shed'],
-                                                                   owner=element['tool_shed_repository']['owner'])
-                        else:
-                            tool_version = ToolVersion.objects.get(name=tool_name,
-                                                                   version=element['version'],
-                                                                   tool_shed=None,
-                                                                   owner=None)
-                    except ToolVersion.DoesNotExist:
-                        tool_version = ToolVersion(name=tool_name,
-                                                   version=element['version'])
-
+                try:
                     if 'tool_shed_repository' in element:
-                        tool_version.changeset = element['tool_shed_repository']['changeset_revision']
-                        tool_version.tool_shed = element['tool_shed_repository']['tool_shed']
-                        tool_version.owner = element['tool_shed_repository']['owner']
+                        tool_version = ToolVersion.objects.get(name=tool_name,
+                                                               changeset=element['tool_shed_repository']['changeset_revision'],
+                                                               tool_shed=element['tool_shed_repository']['tool_shed'],
+                                                               owner=element['tool_shed_repository']['owner'])
+                    else:
+                        tool_version = ToolVersion.objects.get(name=tool_name,
+                                                               version=element['version'],
+                                                               tool_shed=None,
+                                                               owner=None)
+                except ToolVersion.DoesNotExist:
+                    tool_version = ToolVersion(name=tool_name,
+                                               version=element['version'])
 
-                    if instance not in tool_version.instances:
-                        tool_version.instances.append(instance)
+                if 'tool_shed_repository' in element:
+                    tool_version.changeset = element['tool_shed_repository']['changeset_revision']
+                    tool_version.tool_shed = element['tool_shed_repository']['tool_shed']
+                    tool_version.owner = element['tool_shed_repository']['owner']
 
-                    tool_version.save()
+                if instance not in tool_version.instances:
+                    tool_version.instances.append(instance)
 
-                    if tool_version not in tool.versions:
-                        tool.versions.append(tool_version)
+                tool_version.save()
 
-                    tool.save()
+                if tool_version not in tool.versions:
+                    tool.versions.append(tool_version)
+
+                tool.save()
 
     @classmethod
     def search(cls, search):
@@ -175,3 +169,13 @@ class Tool(Document):
                 q = q & q_part
 
         return Tool.objects(q)
+
+    @classmethod
+    def update_catalog(cls):
+
+        # delete all Tool and ToolVersion documents
+        ToolVersion.objects().delete()
+        Tool.objects().delete()
+
+        for instance in Instance.objects():
+            Instance.add_galaxy_instance(instance.url)
