@@ -14,7 +14,7 @@ def cli():
 @cli.command(help="Add a Galaxy instance to the catalog")
 @click.option('--url', prompt='Galaxy URL', help='Galaxy instance url to add to the catalog')
 def add_instance(url):
-    Instance.add_galaxy_instance(url)
+    Instance.add_instance(url=url)
 
 
 @cli.command(help="Update the catalog")

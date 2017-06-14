@@ -3,7 +3,6 @@
 """ Uses Bioblend to connect to Galaxy instances and stores data about tools in a MongoDB database """
 
 from bioblend.galaxy import GalaxyInstance
-from bioblend.galaxy.config import ConfigClient
 from bioblend.galaxy.tools import ToolClient
 from datetime import datetime
 from galaxycat.config import config
@@ -63,15 +62,14 @@ class Instance(Document):
     # message_box_class : warning
 
     @classmethod
-    def add_galaxy_instance(cls, instance_url):
+    def add_instance(cls, url):
         try:
-            instance = Instance.objects.get(url=instance_url)
+            instance = Instance.objects.get(url=url)
         except Instance.DoesNotExist:
-            instance = Instance(url=instance_url)
+            instance = Instance(url=url)
 
-        galaxy_instance = GalaxyInstance(url=instance_url)
-        config_client = ConfigClient(galaxy_instance)
-        instance_config = config_client.get_config()
+        galaxy_instance = GalaxyInstance(url=url)
+        instance_config = galaxy_instance.config.get_config()
 
         instance.update_date = datetime.now()
         instance.allow_user_creation = instance_config['allow_user_creation']
@@ -178,4 +176,4 @@ class Tool(Document):
         Tool.objects().delete()
 
         for instance in Instance.objects():
-            Instance.add_galaxy_instance(instance.url)
+            Instance.add_instance(url=instance.url)
