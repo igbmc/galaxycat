@@ -37,7 +37,7 @@
       {% endif %}
       <td>
         <ul class="list-unstyled">
-          {% for instance in version.instances %}
+          {% for instance in version.instances|sort(attribute='url') %}
           <li>
             <a href="{{instance.url}}" target="_blank">{{instance.url}}</a>
           </li>
