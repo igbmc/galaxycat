@@ -4,6 +4,7 @@
 
 import requests
 
+from bioblend import ConnectionError
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tools import ToolClient
 from datetime import datetime
@@ -60,30 +61,33 @@ class Instance(Document):
         except Instance.DoesNotExist:
             instance = Instance(url=url)
 
-        galaxy_instance = GalaxyInstance(url=url)
-        instance_config = galaxy_instance.config.get_config()
+        try:
+            galaxy_instance = GalaxyInstance(url=url)
+            instance_config = galaxy_instance.config.get_config()
 
-        instance.update_date = datetime.now()
-        instance.allow_user_creation = instance_config['allow_user_creation']
-        instance.brand = instance_config['brand']
-        instance.enable_quotas = 'enable_quotas' in instance_config and instance_config['enable_quotas']
-        instance.require_login = instance_config['require_login']
-        instance.terms_url = instance_config['terms_url']
-        instance.version = instance_config['version_major']
+            instance.update_date = datetime.now()
+            instance.allow_user_creation = instance_config['allow_user_creation']
+            instance.brand = instance_config['brand']
+            instance.enable_quotas = 'enable_quotas' in instance_config and instance_config['enable_quotas']
+            instance.require_login = instance_config['require_login']
+            instance.terms_url = instance_config['terms_url']
+            instance.version = instance_config['version_major']
 
-        url_data = urlparse(url)
-        instance_location = requests.get('http://ip-api.com/json/%s' % url_data.netloc)
-        instance_location = instance_location.json()
-        instance.city = instance_location['city']
-        instance.zipcode = instance_location['zip']
-        instance.country = instance_location['country']
-        instance.country_code = instance_location['countryCode']
-        instance.latitude = instance_location['lat']
-        instance.longitude = instance_location['lon']
+            url_data = urlparse(url)
+            instance_location = requests.get('http://ip-api.com/json/%s' % url_data.netloc)
+            instance_location = instance_location.json()
+            instance.city = instance_location['city']
+            instance.zipcode = instance_location['zip']
+            instance.country = instance_location['country']
+            instance.country_code = instance_location['countryCode']
+            instance.latitude = instance_location['lat']
+            instance.longitude = instance_location['lon']
 
-        instance.save()
+            instance.save()
 
-        Tool.retrieve_tools_from_instance(instance=instance)
+            Tool.retrieve_tools_from_instance(instance=instance)
+        except ConnectionError:
+            print "Unable to add or update %s" % url
 
     def get_tools_count(self):
         tool_versions = ToolVersion.objects(instances=self)
