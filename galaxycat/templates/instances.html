@@ -7,17 +7,18 @@
     <tr>
       <th>Brand</th>
       <th>URL</th>
-      <th>Version</th>
+      <th>Location</th>
       <th>Properties</th>
+      <th>Version</th>
       <th>Tools available</th>
     </tr>
   </thead>
   <tbody>
-    {% for instance in instances %}
+    {% for instance in instances|sort(attribute='brand') %}
     <tr>
       <td>{{ instance.brand|default('', True) }}</td>
       <td><a href="{{ instance.url }}">{{ instance.url }}</a></td>
-      <td>{{ instance.version }}</td>
+      <td>{{ instance.location }}</td>
       <td>
           {% if instance.require_login %}
           <i class="fa fa-lock" title="Login required"></i>
@@ -31,6 +32,7 @@
           <a href="{{ instance.terms_url }}" target="_blank" title="Terms"><i class="fa fa-legal"></i></a>
           {% endif %}
       </td>
+      <td>{{ instance.version }}</td>
       <td>{{ instance.get_tools_count() }}</td>
     </tr>
     {% else %}

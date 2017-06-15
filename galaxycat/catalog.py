@@ -2,15 +2,17 @@
 
 """ Uses Bioblend to connect to Galaxy instances and stores data about tools in a MongoDB database """
 
+import requests
+
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tools import ToolClient
 from datetime import datetime
 from galaxycat.config import config
 from mongoengine import connect
 from mongoengine import Document
-from mongoengine import BooleanField, DateTimeField, ListField, ReferenceField, StringField
+from mongoengine import BooleanField, DateTimeField, FloatField, ListField, ReferenceField, StringField
 from mongoengine.queryset.visitor import Q
-
+from urlparse import urlparse
 
 connect(db=config['MONGODB_DB'], host=config['MONGODB_HOST'], port=config['MONGODB_PORT'])
 
@@ -26,40 +28,30 @@ class Instance(Document):
     require_login = BooleanField()
     terms_url = StringField()
     version = StringField()
+    city = StringField()
+    zipcode = StringField()
+    country = StringField()
+    country_code = StringField()
+    latitude = FloatField()
+    longitude = FloatField()
     meta = {'collection': 'instances'}
 
-    # ftp_upload_site : ftp.galaxeast.fr
-    # mailing_lists : https://wiki.galaxyproject.org/MailingLists
-    # nginx_upload_path : /_upload
-    # communication_server_host : http://localhost
-    # enable_unique_workflow_defaults : False
-    # wiki_url : http://wiki.galaxeast.fr
-    # support_url : https://wiki.galaxyproject.org/Support
-    # persistent_communication_rooms : []
-    # remote_user_logout_href : None
-    # logo_src : /static/images/galaxyIcon_noText.png
-    # enable_communication_server : False
-    # has_user_tool_filters : False
-    # biostar_url_redirect : http://use.galaxeast.fr/biostar/biostar_redirect
-    # message_box_visible : True
-    # ftp_upload_dir : /galaxeast_ftp/galaxy
-    # enable_openid : False
-    # logo_url : /
-    # search_url : http://galaxyproject.org/search/usegalaxy/
-    # screencasts_url : None
-    # ga_code : None
-    # communication_server_port : 7070
-    # lims_doc_url : https://usegalaxy.org/u/rkchak/p/sts
-    # inactivity_box_content : Your account has not been activated yet. Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
-    # citation_url : https://wiki.galaxyproject.org/CitingGalaxy
-    # is_admin_user : False
-    # allow_user_dataset_purge : True
-    # server_startttime : 1496916251
-    # biostar_url : None
-    # message_box_content : From now on, to authenticate on the FTP server you will have to use your Galaxeast <strong>username</strong>. <a href="http://wiki.galaxeast.fr/doku.php?id=doc:ftp_login">More information...</a>
-    # use_remote_user : None
-    # datatypes_disable_auto : False
-    # message_box_class : warning
+    # {
+    #     "as":"AS2259 UNIVERSITE DE STRASBOURG",
+    #     "city":"Strasbourg",
+    #     "country":"France",
+    #     "countryCode":"FR",
+    #     "isp":"Universite De Strasbourg",
+    #     "lat":48.6004,
+    #     "lon":7.7874,
+    #     "org":"Universite De Strasbourg",
+    #     "query":"130.79.78.25",
+    #     "region":"GES",
+    #     "regionName":"Grand-Est",
+    #     "status":"success",
+    #     "timezone":"Europe/Paris",
+    #     "zip":"67000"
+    # }
 
     @classmethod
     def add_instance(cls, url):
@@ -78,6 +70,17 @@ class Instance(Document):
         instance.require_login = instance_config['require_login']
         instance.terms_url = instance_config['terms_url']
         instance.version = instance_config['version_major']
+
+        url_data = urlparse(url)
+        instance_location = requests.get('http://ip-api.com/json/%s' % url_data.netloc)
+        instance_location = instance_location.json()
+        instance.city = instance_location['city']
+        instance.zipcode = instance_location['zip']
+        instance.country = instance_location['country']
+        instance.country_code = instance_location['countryCode']
+        instance.latitude = instance_location['lat']
+        instance.longitude = instance_location['lon']
+
         instance.save()
 
         Tool.retrieve_tools_from_instance(instance=instance)
@@ -87,6 +90,13 @@ class Instance(Document):
         seen = set()
         unique_tool = [tool_version for tool_version in tool_versions if not (tool_version.name in seen or seen.add(tool_version.name))]
         return len(unique_tool)
+
+    @property
+    def location(self):
+        if self.city is not None and self.country is not None:
+            return "%s, %s" % (self.city, self.country)
+        else:
+            return "Unknown"
 
 
 class ToolVersion(Document):
