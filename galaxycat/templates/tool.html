@@ -6,6 +6,10 @@
 
 <p class="lead">{{ tool.name }}</p>
 
+{% for edam_operation in tool.edam_operations %}
+<span class="label label-default">{{ edam_operation.label }}</span>
+{% endfor %}
+
 <table class="table table-condensed table-responsive table-hover">
   <thead>
     <tr>

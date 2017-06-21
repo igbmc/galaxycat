@@ -17,7 +17,7 @@
 
 {% if request.args['search'] %}
 {% if tools|length > 0 %}
-<h3>{{ tools|length }} tool(s) found</h3>
+<h4>{{ tools|length }} tool(s) found</h4>
 {% endif %}
 
 <table class="table table-condensed table-striped table-responsive table-hover">
@@ -25,6 +25,7 @@
     <tr>
       <th>Tool</th>
       <th>Description</th>
+      <th>Topics</th>
       <th>Available version(s)</th>
     </tr>
   </thead>
@@ -33,11 +34,16 @@
     <tr>
       <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.display_name }}</a></td>
       <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.description }}</a></td>
+      <td>
+        {% for edam_operation in tool.edam_operations|sort(attribute='label') %}
+        <a class="btn btn-xs btn-default" href="{{ url_for('search', search="topic:\""+edam_operation.label+"\"") }}">{{ edam_operation.label }}</a>
+        {% endfor %}
+      </td>
       <td><a href="{{ url_for('tool', id=tool.id) }}">{{ tool.versions|length }}</a></td>
     </tr>
     {% else %}
     <tr>
-      <td colspan="3">No tool found</td>
+      <td colspan="4">No tool found</td>
     </tr>
     {% endfor %}
   </tbody>

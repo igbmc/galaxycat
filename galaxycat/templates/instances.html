@@ -33,7 +33,15 @@
           {% endif %}
       </td>
       <td>{{ instance.version }}</td>
-      <td>{{ instance.get_tools_count() }}</td>
+      <td>
+        {% if instance.brand != None %}
+        <a href="{{ url_for('search', search='instance:"'+instance.brand+'"') }}">
+        {% endif %}
+        {{ instance.get_tools_count() }}
+        {% if instance.brand != None %}
+        </a>
+        {% endif %}
+      </td>
     </tr>
     {% else %}
     <tr>

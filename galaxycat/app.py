@@ -4,7 +4,7 @@ from flask import Flask
 from flask import abort, render_template, request
 from galaxycat import __version__
 from galaxycat.config import config
-from galaxycat.catalog import Instance, Tool
+from galaxycat.catalog import EDAMOperation, Instance, Tool
 
 app = Flask(__name__)
 app.config.from_mapping(config)
@@ -19,12 +19,7 @@ def utility_processor():
 def search():
 
     search = request.args.get('search', None)
-
-    tools = []
-    if search is not None:
-        tools = Tool.search(search)
-    else:
-        tools = Tool.objects()
+    tools = Tool.search(search)
 
     return render_template('search.html', search=search, tools=tools)
 
