@@ -4,7 +4,7 @@ The GalaxyCat is an online catalog that lists all the tools available on various
 
 The GalaxyCat package includes all scripts to automatically feed the catalog database through the command line and the web application interface. The tool uses Bioblend to recover the list of all available tools in Galaxy instances.
 
-An example of the deployment of Galaxycat is available [here](galaxycat.france-bioinformatique.fr).
+An example of the deployment of Galaxycat is available [here](http://galaxycat.france-bioinformatique.fr).
 
 ## Requirements
 
@@ -66,7 +66,8 @@ You can update the catalog at anytime with the following command :
 
 ## Search for tools using the webapp
 Tools can be searched by one or many key words. Example: samtools.
-Search can be limited using filters such as
+
+Search can be limited using filters such as:
   * EDAM ontology topics (see available topics in the Topics tab). Example: topics:conversion
   * Instances. It requires from the instance to have a defined brand. Exemple: instance:galaxeast.
 
