@@ -21,7 +21,7 @@ class DefaultConfig:
     BABEL_DEFAULT_TIMEZONE = 'UTC+1'
 
     # App config
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../galaxycat.s3db'
+    SQLALCHEMY_DATABASE_URI = None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Logging standard configuration : override default Flask logging
