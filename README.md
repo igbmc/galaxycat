@@ -10,7 +10,7 @@ An example of the deployment of Galaxycat is available [here](http://galaxycat.f
 
   * Python 2.7
   * virtualenv
-  * A mongodb server
+  * A Postgresql server and the psycopg2 Python package
 
 ## Install for developer
 
@@ -36,11 +36,11 @@ Install the galaxycat package :
 
 Create a file called app.cfg as follow :
 
-    MONGODB_HOST = your_mongodb_server
-    MONGODB_PORT = your_mongodb_port
-    MONGODB_DB = your_mongodb_db
+    SQLALCHEMY_DATABASE_URI = 'postgresql:///username:password@dbhost/db'
 
-*By default galaxycat tries to connect to localhost on port 27017 to the galaxycat db.*
+Create the database schema :
+
+    $ galaxycat create_database
 
 ## Register a galaxy instance
 
