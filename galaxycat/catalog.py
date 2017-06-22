@@ -9,35 +9,41 @@ from bioblend import ConnectionError
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tools import ToolClient
 from datetime import datetime
-from galaxycat.config import config
-from mongoengine import connect
-from mongoengine import Document
-from mongoengine import BooleanField, DateTimeField, FloatField, ListField, ReferenceField, StringField
-from mongoengine.queryset.visitor import Q
+from galaxycat.app import db
 from pyparsing import Group, Literal, OneOrMore, QuotedString, Word
+from sqlalchemy import func
 from urlparse import urlparse
 
-connect(db=config['MONGODB_DB'], host=config['MONGODB_HOST'], port=config['MONGODB_PORT'])
+
+toolversion_instance = db.Table('toolversion_instance',
+                                db.Column('tool_version_id', db.Integer, db.ForeignKey('tool_version.id')),
+                                db.Column('instance_id', db.Integer, db.ForeignKey('instance.id')))
+
+tool_edam_operation = db.Table('tool_edam_operation',
+                               db.Column('tool_id', db.Integer, db.ForeignKey('tool.id')),
+                               db.Column('edam_operation_id', db.Unicode, db.ForeignKey('edam_operation.operation_id')))
 
 
-class Instance(Document):
+class Instance(db.Model):
 
-    url = StringField(required=True, unique=True)
-    creation_date = DateTimeField(required=True, default=datetime.now)
-    update_date = DateTimeField()
-    allow_user_creation = BooleanField()
-    brand = StringField()
-    enable_quotas = BooleanField()
-    require_login = BooleanField()
-    terms_url = StringField()
-    version = StringField()
-    city = StringField()
-    zipcode = StringField()
-    country = StringField()
-    country_code = StringField()
-    latitude = FloatField()
-    longitude = FloatField()
-    meta = {'collection': 'instances'}
+    __tablename__ = 'instance'
+
+    id = db.Column(db.Integer, primary_key=True)
+    url = db.Column(db.Unicode, unique=True, nullable=False)
+    creation_date = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    update_date = db.Column(db.DateTime())
+    allow_user_creation = db.Column(db.Boolean())
+    brand = db.Column(db.Unicode())
+    enable_quotas = db.Column(db.Boolean())
+    require_login = db.Column(db.Boolean())
+    terms_url = db.Column(db.Unicode())
+    version = db.Column(db.Unicode())
+    city = db.Column(db.Unicode())
+    zipcode = db.Column(db.Unicode())
+    country = db.Column(db.Unicode())
+    country_code = db.Column(db.Unicode())
+    latitude = db.Column(db.Float())
+    longitude = db.Column(db.Float())
 
     # {
     #     "as":"AS2259 UNIVERSITE DE STRASBOURG",
@@ -58,10 +64,11 @@ class Instance(Document):
 
     @classmethod
     def add_instance(cls, url):
-        try:
-            instance = Instance.objects.get(url=url)
-        except Instance.DoesNotExist:
+
+        instance = Instance.query.filter_by(url=url).first()
+        if instance is None:
             instance = Instance(url=url)
+            db.session.add(instance)
 
         try:
             galaxy_instance = GalaxyInstance(url=url)
@@ -71,14 +78,14 @@ class Instance(Document):
             instance.allow_user_creation = instance_config['allow_user_creation']
             instance.brand = instance_config['brand']
             instance.enable_quotas = 'enable_quotas' in instance_config and instance_config['enable_quotas']
-            instance.require_login = instance_config['require_login']
+            instance.require_login = 'require_login' in instance_config and instance_config['require_login']
             instance.terms_url = instance_config['terms_url']
             instance.version = instance_config['version_major']
 
             url_data = urlparse(url)
             try:
                 instance_location = requests.get('http://ip-api.com/json/%s' % url_data.netloc)
-            except requests.exceptions.ConnectionError:
+            except requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout:
                 print "Unable to get location data for %s" % url_data.netloc
             else:
                 try:
@@ -93,17 +100,14 @@ class Instance(Document):
                     instance.latitude = instance_location['lat']
                     instance.longitude = instance_location['lon']
 
-            instance.save()
+            db.session.commit()
 
             Tool.retrieve_tools_from_instance(instance=instance)
         except ConnectionError:
             print "Unable to add or update %s" % url
 
     def get_tools_count(self):
-        tool_versions = ToolVersion.objects(instances=self)
-        seen = set()
-        unique_tool = [tool_version for tool_version in tool_versions if not (tool_version.name in seen or seen.add(tool_version.name))]
-        return len(unique_tool)
+        return len(Tool.query.outerjoin(EDAMOperation, Tool.edam_operations).join(ToolVersion).join(Instance, ToolVersion.instances).filter(Instance.id == self.id).all())
 
     @property
     def location(self):
@@ -113,54 +117,58 @@ class Instance(Document):
             return "Unknown"
 
 
-class EDAMOperation(Document):
+class EDAMOperation(db.Model):
 
-    operation_id = StringField(required=True)
-    iri = StringField(required=True)
-    label = StringField(required=True)
-    description = StringField(required=False)
+    __tablename__ = 'edam_operation'
+
+    operation_id = db.Column(db.Unicode(), primary_key=True)
+    iri = db.Column(db.Unicode(), nullable=False)
+    label = db.Column(db.Unicode(), nullable=False)
+    description = db.Column(db.Unicode())
 
     @classmethod
     def get_from_id(cls, operation_id, allow_creation=False):
 
-        try:
-            edam_operation = EDAMOperation.objects.get(operation_id=operation_id)
-        except EDAMOperation.DoesNotExist:
-            edam_operation = None
-            if allow_creation:
-                iri = 'http://edamontology.org/%s' % operation_id
-                api_url = 'http://www.ebi.ac.uk/ols/api/ontologies/edam/terms/%s' % urllib.quote(urllib.quote(iri, safe=''), safe='')
-                edam_response = requests.get(api_url)
-                if edam_response.status_code == 200:
-                    edam_data = edam_response.json()
-                    edam_operation = EDAMOperation(operation_id=operation_id,
-                                                   iri=iri,
-                                                   label=edam_data['label'],
-                                                   description=" ".join(edam_data['description']))
-                    edam_operation.save()
+        edam_operation = EDAMOperation.query.filter_by(operation_id=operation_id).first()
+        if edam_operation is None and allow_creation:
+            iri = 'http://edamontology.org/%s' % operation_id
+            api_url = 'http://www.ebi.ac.uk/ols/api/ontologies/edam/terms/%s' % urllib.quote(urllib.quote(iri, safe=''), safe='')
+            edam_response = requests.get(api_url)
+            if edam_response.status_code == 200:
+                edam_data = edam_response.json()
+                edam_operation = EDAMOperation(operation_id=operation_id,
+                                               iri=iri,
+                                               label=edam_data['label'],
+                                               description=" ".join(edam_data['description']))
+                db.session.add(edam_operation)
 
         return edam_operation
 
 
-class ToolVersion(Document):
+class ToolVersion(db.Model):
 
-    name = StringField(required=True)
-    version = StringField(required=True)
-    tool_shed = StringField(required=False)
-    owner = StringField(required=False)
-    changeset = StringField(required=False)
-    # FIXME: we should use EmbeddedDocument to store instance data for each tool version (improve perf)
-    instances = ListField(ReferenceField(Instance))
+    __tablename__ = 'tool_version'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Unicode(), nullable=False)
+    version = db.Column(db.Unicode(), nullable=False)
+    tool_shed = db.Column(db.Unicode())
+    owner = db.Column(db.Unicode())
+    changeset = db.Column(db.Unicode())
+    tool_id = db.Column(db.Integer, db.ForeignKey('tool.id'))
+    instances = db.relationship('Instance', secondary=toolversion_instance, backref=db.backref('tool_versions'))
 
 
-class Tool(Document):
+class Tool(db.Model):
 
-    name = StringField(required=True, unique=True)
-    description = StringField()
-    display_name = StringField()
-    versions = ListField(ReferenceField(ToolVersion))
-    edam_operations = ListField(ReferenceField(EDAMOperation))
-    meta = {'collection': 'tools'}
+    __tablename__ = 'tool'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Unicode(), nullable=False, unique=True)
+    description = db.Column(db.Unicode())
+    display_name = db.Column(db.Unicode())
+    versions = db.relationship('ToolVersion', backref='tool')
+    edam_operations = db.relationship('EDAMOperation', secondary=tool_edam_operation, backref=db.backref('tools'))
 
     @classmethod
     def retrieve_tools_from_instance(cls, instance):
@@ -174,10 +182,10 @@ class Tool(Document):
                 if '/' in tool_name:
                     tool_name = tool_name.split('/')[-2]
 
-                try:
-                    tool = Tool.objects.get(name=tool_name)
-                except Tool.DoesNotExist:
+                tool = Tool.query.filter_by(name=tool_name).first()
+                if tool is None:
                     tool = Tool(name=tool_name)
+                    db.session.add(tool)
 
                 tool.description = element['description']
                 tool.display_name = element['name']
@@ -187,20 +195,24 @@ class Tool(Document):
                     if edam_operation is not None and edam_operation not in tool.edam_operations:
                         tool.edam_operations.append(edam_operation)
 
-                try:
-                    if 'tool_shed_repository' in element:
-                        tool_version = ToolVersion.objects.get(name=tool_name,
-                                                               changeset=element['tool_shed_repository']['changeset_revision'],
-                                                               tool_shed=element['tool_shed_repository']['tool_shed'],
-                                                               owner=element['tool_shed_repository']['owner'])
-                    else:
-                        tool_version = ToolVersion.objects.get(name=tool_name,
-                                                               version=element['version'],
-                                                               tool_shed=None,
-                                                               owner=None)
-                except ToolVersion.DoesNotExist:
+                if 'tool_shed_repository' in element:
+                    tool_version = ToolVersion.query\
+                                              .filter_by(name=tool_name)\
+                                              .filter_by(changeset=element['tool_shed_repository']['changeset_revision'])\
+                                              .filter_by(tool_shed=element['tool_shed_repository']['tool_shed'])\
+                                              .filter_by(owner=element['tool_shed_repository']['owner'])\
+                                              .first()
+                else:
+                    tool_version = ToolVersion.query\
+                                              .filter_by(name=tool_name)\
+                                              .filter_by(version=element['version'])\
+                                              .filter_by(tool_shed=None)\
+                                              .filter_by(owner=None)\
+                                              .first()
+                if tool_version is None:
                     tool_version = ToolVersion(name=tool_name,
                                                version=element['version'])
+                    db.session.add(tool_version)
 
                 if 'tool_shed_repository' in element:
                     tool_version.changeset = element['tool_shed_repository']['changeset_revision']
@@ -210,71 +222,42 @@ class Tool(Document):
                 if instance not in tool_version.instances:
                     tool_version.instances.append(instance)
 
-                tool_version.save()
-
                 if tool_version not in tool.versions:
                     tool.versions.append(tool_version)
 
-                tool.save()
+                db.session.commit()
 
     @classmethod
     def search(cls, search):
         if search is None or len(search) == 0:
             return []
 
-        q = None
-        instances = []
+        query = Tool.query.outerjoin(EDAMOperation, Tool.edam_operations).join(ToolVersion).join(Instance, ToolVersion.instances)
         nodes = parse_search_query(search)
         for node in nodes:
-            q_part = None
             if type(node) == ComparisonNode:
                 key = node[0]
-                value = u" ".join(node[2])
+                value = u" ".join(node[2]).lower()
                 if key == u"topic":
-                    try:
-                        edam_operation = EDAMOperation.objects().get(label=value)
-                    except EDAMOperation.DoesNotExist:
-                        return []
-                    else:
-                        q_part = Q(edam_operations=edam_operation)
+                    query = query.filter(func.lower(EDAMOperation.label) == value)
                 elif key == u"instance":
-                    try:
-                        instance = Instance.objects().get(brand=value)
-                    except Instance.DoesNotExist:
-                        return []
-                    else:
-                        instances.append(instance)
+                    query = query.filter(func.lower(Instance.brand) == value)
                 else:
                     # unknown key
                     return []
             else:
-                term = " ".join(node)
-                q_part = (Q(name__icontains=term) | Q(description__icontains=term) | Q(display_name__icontains=term))
+                term = " ".join(node).lower()
+                query = query.filter(func.lower(Tool.name).match(term) | func.lower(Tool.description).match(term) | func.lower(Tool.display_name).match(term))
 
-            if q_part is not None:
-                if q is None:
-                    q = q_part
-                else:
-                    q = q & q_part
-
-        tools = Tool.objects(q)
-        selected_tools = []
-        if len(instances) > 0:
-            for tool in tools:
-                for version in tool.versions:
-                    if len(filter(lambda x: x in version.instances, instances)) == len(instances):
-                        selected_tools.append(tool)
-        else:
-            selected_tools = tools
-
-        return selected_tools
+        return query.all()
 
     @classmethod
     def update_catalog(cls):
 
-        # delete all Tool and ToolVersion documents
-        ToolVersion.objects().delete()
-        Tool.objects().delete()
+        # delete all Tool and ToolVersion
+        ToolVersion.query.delete()
+        Tool.query.delete()
+        db.session.commit()
 
         for instance in Instance.objects():
             Instance.add_instance(url=instance.url)

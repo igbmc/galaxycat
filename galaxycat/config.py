@@ -21,9 +21,8 @@ class DefaultConfig:
     BABEL_DEFAULT_TIMEZONE = 'UTC+1'
 
     # App config
-    MONGODB_HOST = 'localhost'
-    MONGODB_PORT = 27017
-    MONGODB_DB = 'galaxycat'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///../galaxycat.s3db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Logging standard configuration : override default Flask logging
     # https://docs.python.org/2/library/logging.config.html#logging.config.dictConfig

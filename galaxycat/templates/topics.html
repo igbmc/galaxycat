@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2 text-center">
+    {% for topic in topics %}
+    <a href="{{ url_for('search', search='topic:"'+topic.label+'"') }}" style="font-size: {{ topic.font_size }}px;">{{ topic.label|replace(' ', '&nbsp;')|safe }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

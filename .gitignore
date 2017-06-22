@@ -49,6 +49,13 @@ coverage.xml
 *.log
 *.pot
 
+# SQlite db
+*.db
+*.s3db
+
+# Mac stuff
+.DS_Store
+
 # Sphinx documentation
 docs/_build/
 

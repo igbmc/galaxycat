@@ -3,12 +3,18 @@
 import click
 
 
-from galaxycat.catalog import Instance, Tool
+from galaxycat.app import db
+from galaxycat.catalog import EDAMOperation, Instance, Tool, ToolVersion  # NOQA
 
 
 @click.group()
 def cli():
     pass
+
+
+@cli.command(help="Create the GalaxyCat SQL database")
+def create_database():
+    db.create_all()
 
 
 @cli.command(help="Add a Galaxy instance to the catalog")

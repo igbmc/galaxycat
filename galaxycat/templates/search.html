@@ -10,7 +10,12 @@
           <button class="btn btn-default" type="submit"><i class="fa fa-search" aria-hidden="true"></i></button>
         </span>
       </div><!-- /input-group -->
-      <p class="help-block">Examples : samtools, bed, wig</p>
+      <p class="help-block">Examples :
+        <a href="{{ url_for('search', search='samtools') }}">samtools</a>,
+        <a href="{{ url_for('search', search='bed') }}">bed</a>,
+        <a href="{{ url_for('search', search='topic:conversion') }}">topic:conversion</a>
+        <!--<a href="{{ url_for('search', search='instance:galaxeast') }}">instance:galaxeast</a>-->
+      </p>
     </form>
   </div><!-- /.col-lg-6 -->
 </div><!-- /.row -->

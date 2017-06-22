@@ -29,14 +29,18 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="{{ url_for('search') }}"><i class="fa fa-search" aria-hidden="true"></i> GalaxyCat <span class="version">v{{version}}</span></a>
+          <a class="navbar-brand" href="{{ url_for('search') }}">
+            <img style="display: inline;" src="{{ url_for('static', filename='img/logo-small.png') }}" alt="The GalaxyCat logo"/> GalaxyCat <span class="version">v{{version}}</span>
+          </a>
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="navbar">
           <ul class="nav navbar-nav">
             <li {% if request.base_url.endswith(url_for('search')) %}class="active"{% endif %}><a href="{{ url_for('search') }}">Tools</a></li>
+            <li {% if request.base_url.endswith(url_for('topics')) %}class="active"{% endif %}><a href="{{ url_for('topics') }}">Topics</a></li>
             <li {% if request.base_url.endswith(url_for('instances')) %}class="active"{% endif %}><a href="{{ url_for('instances') }}">Instances</a></li>
+            <li {% if request.base_url.endswith(url_for('about')) %}class="active"{% endif %}><a href="{{ url_for('about') }}">About</a></li>
           </ul>
         </div><!-- /.navbar-collapse -->
       </div><!-- /.container-fluid -->

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2 text-center">
+    <div class="text-center">
+      <p>
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="The GalaxyCat logo"/>
+      </p>
+      <p class="lead">GalaxyCat v{{version}}</p>
+      <p>The GalaxyCat is a catalog of bioinformatic tools available across a collection of public Galaxy instances.</p>
+
+      <p><a href="https://github.com/igbmc/galaxycat" class="btn btn-primary">Fork on GitHub</a></p>
+    </div>
+
+    <div class="text-center">
+      <strong>&lt;&nbsp;&gt;</strong> with <i class="fa fa-heart"></i> by <a href="http://www.france-bioinformatique.fr">IFB</a> and <a href="http://www.igbmc.fr">IGBMC</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
