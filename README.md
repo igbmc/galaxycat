@@ -64,11 +64,11 @@ You can update the catalog at anytime with the following command :
 
 *See Gunicorn documentation for more options*
 
-## Search for tools
+## Search for tools using the webapp
 Tools can be searched by:
-  * Key words. Example: samtools
+  * Key one or many words. Example: samtools
   * EDAM ontology topics (see available topics in the Topics tab). Example: topics:conversion
-  * Instances to list all tools available on a given Galaxy instance. It requires from the instance to have a brand. Exemple: instance:galaxeast.
+  * Instances to list all tools available on a given Galaxy instance. It requires from the instance to have a defined brand. Exemple: instance:galaxeast.
 
 # Coming up
 
