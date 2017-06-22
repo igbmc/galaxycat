@@ -1,6 +1,10 @@
 # galaxycat
 
-An online catalog for Galaxy instances and tools.
+The GalaxyCat is an online catalog that lists all the tools available on various Galaxy instances and thus allows through a simple web interface to quickly find on which instances a tool is usable.
+
+The GalaxyCat package includes all scripts to automatically feed the catalog database through the command line and the web application interface. The tool uses Bioblend to recover the list of all available tools in Galaxy instances.
+
+An example of the deployment of Galaxycat is available [here](http://galaxycat.france-bioinformatique.fr).
 
 ## Requirements
 
@@ -60,9 +64,12 @@ You can update the catalog at anytime with the following command :
 
 *See Gunicorn documentation for more options*
 
-# Coming up
+## Search for tools using the webapp
+Tools can be searched by one or many key words. Example: samtools.
 
-  * EDAM data integration
-  * ~~Better search engine~~
+Search can be limited using filters such as:
+  * EDAM ontology topics (see available topics in the Topics tab). Example: topics:conversion
+  * Instances. It requires from the instance to have a defined brand. Exemple: instance:galaxeast.
+
+# Coming up
   * Pagination ~~and stats on search results~~
-  * ~~Direct link to instance terms~~
