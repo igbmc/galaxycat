@@ -23,13 +23,17 @@
           {% if instance.require_login %}
           <i class="fa fa-lock" title="Login required"></i>
           {% else %}
-          <i class="fa fa-unlock" title="No login required"></i>
+          <i class="text-muted fa fa-lock" title="No login required"></i>
           {% endif %}
           {% if instance.enable_quotas %}
           <i class="fa fa-pie-chart" title="Quotas enabled"></i>
+          {% else %}
+          <i class="text-muted fa fa-pie-chart" title="No quota"></i>
           {% endif %}
           {% if instance.terms_url %}
           <a href="{{ instance.terms_url }}" target="_blank" title="Terms"><i class="fa fa-legal"></i></a>
+          {% else %}
+          <i class="text-muted fa fa-legal"></i>
           {% endif %}
       </td>
       <td>{{ instance.version }}</td>
