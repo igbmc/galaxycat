@@ -246,8 +246,8 @@ class Tool(db.Model):
                     # unknown key
                     return []
             else:
-                term = " ".join(node).lower()
-                query = query.filter(func.lower(Tool.name).match(term) | func.lower(Tool.description).match(term) | func.lower(Tool.display_name).match(term))
+                term = "%{0}%".format(" ".join(node).lower())
+                query = query.filter(Tool.name.ilike(term) | Tool.description.ilike(term) | Tool.display_name.ilike(term))
 
         return query.all()
 
