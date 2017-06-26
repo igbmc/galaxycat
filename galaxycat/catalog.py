@@ -93,12 +93,12 @@ class Instance(db.Model):
                 except ValueError:
                     print "Unable to decode location data for %s" % url_data.netloc
                 else:
-                    instance.city = instance_location['city']
-                    instance.zipcode = instance_location['zip']
-                    instance.country = instance_location['country']
-                    instance.country_code = instance_location['countryCode']
-                    instance.latitude = instance_location['lat']
-                    instance.longitude = instance_location['lon']
+                    instance.city = instance_location.get('city', None)
+                    instance.zipcode = instance_location.get('zip', None)
+                    instance.country = instance_location.get('country', None)
+                    instance.country_code = instance_location.get('countryCode', None)
+                    instance.latitude = instance_location.get('lat', None)
+                    instance.longitude = instance_location.get('lon', None)
 
             db.session.commit()
 
