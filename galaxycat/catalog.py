@@ -190,7 +190,11 @@ class Tool(db.Model):
 
                 tool.description = element['description']
                 tool.display_name = element['name']
-                tool.link = element.get('link', None)
+                if 'link' in element:
+                    link = element.get('link', None)
+                    link_start = link.find('/tool_runner')
+                    if link_start != -1:
+                        tool.link = link[link_start:]
 
                 for edam_opetation_id in element.get('edam_operations', []):
                     edam_operation = EDAMOperation.get_from_id(edam_opetation_id, allow_creation=True)
