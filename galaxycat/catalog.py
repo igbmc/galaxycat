@@ -255,11 +255,17 @@ class Tool(db.Model):
     def update_catalog(cls):
 
         # delete all Tool and ToolVersion
+        for tool_version in ToolVersion.query.all():
+            tool_version.instances = []
         ToolVersion.query.delete()
+
+        for tool in Tool.query.all():
+            tool.edam_operations = []
         Tool.query.delete()
+
         db.session.commit()
 
-        for instance in Instance.objects():
+        for instance in Instance.query.all():
             Instance.add_instance(url=instance.url)
 
 
