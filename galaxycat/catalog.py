@@ -167,6 +167,7 @@ class Tool(db.Model):
     name = db.Column(db.Unicode(), nullable=False, unique=True)
     description = db.Column(db.Unicode())
     display_name = db.Column(db.Unicode())
+    link = db.Column(db.Unicode())
     versions = db.relationship('ToolVersion', backref='tool')
     edam_operations = db.relationship('EDAMOperation', secondary=tool_edam_operation, backref=db.backref('tools'))
 
@@ -189,6 +190,7 @@ class Tool(db.Model):
 
                 tool.description = element['description']
                 tool.display_name = element['name']
+                tool.link = element.get('link', None)
 
                 for edam_opetation_id in element.get('edam_operations', []):
                     edam_operation = EDAMOperation.get_from_id(edam_opetation_id, allow_creation=True)
