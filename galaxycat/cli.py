@@ -28,6 +28,11 @@ def update_catalog():
     Tool.update_catalog()
 
 
+@cli.command(help="Create Whoosh index")
+def create_index():
+    Tool.create_whoosh_index()
+
+
 @cli.command(help="Serve the GalaxyCat webapp (not suitable for production)")
 @click.option('--host', default="127.0.0.1", help='Host bind to the webapp')
 @click.option('--port', type=int, default=5000, help='Port bind to the webapp')

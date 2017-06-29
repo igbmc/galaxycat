@@ -61,3 +61,5 @@ docs/_build/
 
 # GalaxyCat config
 app.cfg
+
+alembic.ini

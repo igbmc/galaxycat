@@ -10,9 +10,13 @@ from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tools import ToolClient
 from datetime import datetime
 from galaxycat.app import db
+from galaxycat.config import config
 from pyparsing import Group, Literal, OneOrMore, QuotedString, Word
-from sqlalchemy import func
 from urlparse import urlparse
+from whoosh.analysis import BiWordFilter, IntraWordFilter, LowercaseFilter, NgramFilter, PassFilter, RegexTokenizer, TeeFilter
+from whoosh.fields import Schema, TEXT, KEYWORD, STORED
+from whoosh.filedb.filestore import FileStorage
+from whoosh.query import And, Or, Term, Variations
 
 
 toolversion_instance = db.Table('toolversion_instance',
@@ -232,24 +236,30 @@ class Tool(db.Model):
         if search is None or len(search) == 0:
             return []
 
-        query = Tool.query.outerjoin(EDAMOperation, Tool.edam_operations).join(ToolVersion).join(Instance, ToolVersion.instances)
+        terms = []
+
         nodes = parse_search_query(search)
         for node in nodes:
             if type(node) == ComparisonNode:
                 key = node[0]
                 value = u" ".join(node[2]).lower()
                 if key == u"topic":
-                    query = query.filter(func.lower(EDAMOperation.label) == value)
+                    terms.append(Term('topics', value))
                 elif key == u"instance":
-                    query = query.filter(func.lower(Instance.brand) == value)
+                    terms.append(Term('instances', value))
                 else:
                     # unknown key
                     return []
             else:
                 term = " ".join(node).lower()
-                query = query.filter(func.lower(Tool.name).match(term) | func.lower(Tool.description).match(term) | func.lower(Tool.display_name).match(term))
+                terms.append(Or([Variations('name', term), Variations('full_description', term)]))
 
-        return query.all()
+        storage = FileStorage("whoosh")
+        ix = storage.open_index()
+        searcher = ix.searcher()
+        results = searcher.search(And(terms))
+
+        return list(results)
 
     @classmethod
     def update_catalog(cls):
@@ -261,6 +271,33 @@ class Tool(db.Model):
 
         for instance in Instance.objects():
             Instance.add_instance(url=instance.url)
+
+    @classmethod
+    def create_whoosh_index(cls):
+
+        name_analyzer = RegexTokenizer(r"_", gaps=True) | TeeFilter(IntraWordFilter(), PassFilter()) | LowercaseFilter()
+
+        description_analyzer = RegexTokenizer() | IntraWordFilter(mergewords=True) | TeeFilter(BiWordFilter(sep=''), PassFilter()) | TeeFilter(NgramFilter(3), PassFilter()) | LowercaseFilter()
+
+        schema = Schema(tool_id=STORED,
+                        name=TEXT(analyzer=name_analyzer, stored=False),
+                        display_name=STORED,
+                        description=STORED,
+                        full_description=TEXT(analyzer=description_analyzer, stored=False),
+                        topics=KEYWORD(commas=True, lowercase=True, stored=True))
+
+        storage = FileStorage(config['WHOOSH_INDEX_DIR'])
+        ix = storage.create_index(schema)
+        writer = ix.writer()
+
+        for tool in Tool.query.all():
+            writer.add_document(tool_id=tool.id,
+                                name=tool.name,
+                                display_name=tool.display_name,
+                                description=tool.description,
+                                full_description=u' '.join([tool.display_name, tool.description]),
+                                topics=[edam_operation.label for edam_operation in tool.edam_operations])
+        writer.commit()
 
 
 class Node(list):

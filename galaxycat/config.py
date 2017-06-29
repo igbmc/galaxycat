@@ -23,6 +23,7 @@ class DefaultConfig:
     # App config
     SQLALCHEMY_DATABASE_URI = None
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WHOOSH_INDEX_DIR = 'whoosh'
 
     # Logging standard configuration : override default Flask logging
     # https://docs.python.org/2/library/logging.config.html#logging.config.dictConfig
