@@ -1,3 +1,7 @@
+## 0.4.3
+
+* Add support for Google Analytics
+
 ## 0.4.0
 
 * Move database backend from MongoDB to PostgreSQL
